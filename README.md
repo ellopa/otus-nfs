@@ -1,10 +1,10 @@
-# Создание стенда Vagrant с NFS 
+## Создание стенда Vagrant с NFS.
 
-## Цели домашнего задания
+### Цели домашнего задания:
 
 Научиться самостоятельно развернуть сервис NFS и подключить к нему клиента
 
-## Описание домашнего задания
+### Описание домашнего задания.
 
 Основная часть:
 
@@ -19,9 +19,9 @@
 
 - настроить аутентификацию через KERBEROS с использованием NFSv4
 
-## Создаём тестовые виртуальные машины
+### Создаем тестовые виртуальные машины.
 
-- Для начала, использован этот шаблон для создания виртуальных машин
+- Для начала, использован этот шаблон для создания виртуальных машин:
 
 - [Шаблон Vagrantfile](Vagrantfile_old)
 
@@ -34,9 +34,9 @@ id       name          provider   state   directory
 a0e7ff8  nfss          virtualbox running /home/elena_leb/NFS_DZ              
 6d592e5  nfsc          virtualbox running /home/elena_leb/NFS_DZ  
 ```
-## Настраиваем сервер NFS
+### Настраиваем сервер NFS.
 
-- заходим на сервер
+- Заходим на сервер.
 
 ```
 vagrant ssh nfss
@@ -46,7 +46,7 @@ vagrant ssh nfss
 vagrant ssh nfss 
 [vagrant@nfss ~]$ sudo -i
 ```
-- сервер NFS уже установлен в CentOS 7 как часть дистрибутива, так что нам нужно лишь доустановить утилиты, которые облегчат отладку
+- Сервер NFS уже установлен в CentOS 7 как часть дистрибутива, так что нам нужно лишь доустановить утилиты, которые облегчат отладку.
 
 ```
 sudo -i
@@ -113,7 +113,7 @@ Updated:
 
 Complete!
 ```
-- включаем firewall и проверяем, что он работает
+- Включаем firewall и проверяем, что он работает.
 
 ```
 systemctl enable firewalld --now
@@ -137,9 +137,7 @@ Dec 10 07:02:31 nfss systemd[1]: Started firewalld - dynamic firewall daemon.
 Dec 10 07:02:31 nfss firewalld[3499]: WARNING: AllowZoneDrifting is enabled. This is considered...now.
 Hint: Some lines were ellipsized, use -l to show in full.
 ```
- 
-- разрешаем в firewall доступ к сервисам NFS
-
+- Разрешаем в firewall доступ к сервисам NFS.
 ```
 firewall-cmd --add-service="nfs3" \
 --add-service="rpc-bind" \
@@ -156,17 +154,17 @@ success
 [root@nfss ~]# firewall-cmd —reload
 success
 ```
-- включаем сервер NFS
-> для конфигурации NFSv3 over UDP он не требует дополнительной настройки, однако мы можем ознакомиться с умолчаниями в файле **/etc/nfs.conf**)
-
+- Включаем сервер NFS.
+> Для конфигурации NFSv3 over UDP в данном случае не требует дополнительной настройки. Посмотреть настройки по-умолчаниюм - **/etc/nfs.conf**
 ```
 systemctl enable nfs --now
 ```
 ```
-[[root@nfss ~]# systemctl enable nfs --now
+[root@nfss ~]# systemctl enable nfs --now
 Created symlink from /etc/systemd/system/multi-user.target.wants/nfs-server.service to /usr/lib/systemd/system/nfs-server.service.
 ```
-- проверяем наличие слушаемых портов 2049/udp, 2049/tcp, 20048/udp, 20048/tcp, 111/udp, 111/tcp (не все они будут использоваться далее, но их наличие сигнализирует о том, что необходимые сервисы готовы принимать внешние подключения)
+- Проверяем наличие слушаемых портов 2049/udp, 2049/tcp, 20048/udp, 20048/tcp, 111/udp, 111/tcp. 
+> Они не все будут использоваться далее, но их наличие является подтверждением, что необходимые сервисы готовы принимать внешние подключения.
 ```
 [root@nfss ~]# ss -tnplu | grep -E '2049|20048|111'
 udp    UNCONN     0      0         *:20048                 *:*                   users:(("rpc.mountd",pid=22438,fd=7))
@@ -183,47 +181,34 @@ tcp    LISTEN     0      128    [::]:20048              [::]:*                  
 tcp    LISTEN     0      64     [::]:2049               [::]:*                  
 ```
  
-- создаём и настраиваем директорию, которая будет экспортирована в будущем
-
-```bash
+- Создаем и настраиваем директорию, которая будет экспортирована в будущем.
+```
 mkdir -p /srv/share/upload
 chown -R nfsnobody:nfsnobody /srv/share
 chmod 0777 /srv/share/upload
 ```
-
-- создаём в файле /etc/exports структуру, которая позволит экспортировать ранее созданную директорию
-
-```bash
+- Создаем в файле /etc/exports структуру, которая позволит экспортировать ранее созданную директорию.
+```
 [root@nfss upload]# cat << EOF > /etc/exports
 > /srv/share 192.168.56.11/32(rw,sync,root_squash)
 > EOF
 ```
-
-- экспортируем ранее созданную директорию
-
+- Экспортируем ранее созданную директорию.
 ```bash
 [root@nfss upload]# exportfs -r
 ```
-
-- проверяем экспортированную директорию следующей командой
-
-```bash
+- Проверяем экспортированную директорию.
+```
 [root@nfss home]# exportfs -s
 /srv/share  192.168.56.11/32(sync,wdelay,hide,no_subtree_check,sec=sys,rw,secure,root_squash,no_all_squash)
 ```
-
-## Настраиваем клиент NFS
-
-- заходим на клиент
-
+### Настраиваем клиент NFS.
+- Заходим на клиент.
 ```bash
 vagrant ssh nfsc
 ```
-
-> Дальнейшие действия выполняются **от имени пользователя имеющего повышенные привилегии**, разрешающие описанные действия
-
-- доустановим вспомогательные утилиты
-
+> Дальнейшие действия выполняются **от имени пользователя имеющего повышенные привилегии**, разрешающие описанные действия.
+- Доустановим вспомогательные утилиты.
 ```bash
 yum install nfs-utils -y
 ```
@@ -286,8 +271,7 @@ Updated:
 
 Complete!
 ```
-- включаем firewall и проверяем, что он работает
-
+- Включаем firewall и проверяем, что он работает.
 ```bash
 systemctl enable firewalld --now
 systemctl status firewalld
@@ -311,20 +295,16 @@ Dec 10 08:25:28 nfsc firewalld[22597]: WARNING: AllowZoneDrifting is enabled. Th
 Hint: Some lines were ellipsized, use -l to show in full.
 
 ```
-- добавляем в /etc/fstab строку
-
+- Добавляем в /etc/fstab строку:
 ```bash
 [root@nfsc ~]# echo "192.168.56.10:/srv/share/ /mnt nfs vers=3,proto=udp,noauto,x-systemd.automount 0 0" >> /etc/fstab
 ```
-
-- и выполняем
-
+- Выполняем:
 ```bash
 [root@nfsc ~]# systemctl daemon-reload
 [root@nfsc ~]# systemctl restart remote-fs.target
 ```
-
-> Отметим, что в данном случае происходит автоматическая генерация systemd units в каталоге `/run/systemd/generator/`, которые производят монтирование при первом обращении к каталогу `/mnt/`
+> Отметим, что в данном случае происходит автоматическая генерация systemd units в каталоге `/run/systemd/generator/`, которые производят монтирование при первом обращении к каталогу `/mnt/`.
 
 ```
 [root@nfsc ~]# cat /run/systemd/generator/mnt.mount 
@@ -340,9 +320,8 @@ Where=/mnt
 Type=nfs
 Options=vers=3,proto=udp,noauto,x-systemd.automount
 ```
-
-- заходим в директорию `/mnt/` и проверяем успешность монтирования
-
+> Обратим внимание на `vers=3` и `proto=udp`- соответствует NFSv3 over UDP.
+- Заходим в директорию `/mnt/` и проверяем успешность монтирования.
 ```bash
 [root@nfsc ~]# ls /mnt
 upload
@@ -350,54 +329,44 @@ upload
 systemd-1 on /mnt type autofs (rw,relatime,fd=32,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=10988)
 192.168.56.10:/srv/share/ on /mnt type nfs (rw,relatime,vers=3,rsize=32768,wsize=32768,namlen=255,hard,proto=udp,timeo=11,retrans=3,sec=sys,mountaddr=192.168.56.10,mountvers=3,mountport=20048,mountproto=udp,local_lock=none,addr=192.168.56.10)
 ```
+### Проверка работоспособности.
 
-> Обратим внимание на `vers=3` и `proto=udp`, что соответствует NFSv3 over UDP, как того требует задание
-
-## Проверка работоспособности
-
-- заходим на сервер
-- заходим в каталог
+- Заходим на сервер.
+- Заходим в каталог.
 
 ```bash
 [vagrant@nfss ~]$ cd /srv/share/upload
 ```
-
-- создаём тестовый файл
-
+- Создаем тестовый файл.
 ```
 [vagrant@nfss upload]$ touch check_file
 [vagrant@nfss upload]$ ls
 check_file
 ```
-
-- заходим на клиент в каталог
-- проверяем наличие ранее созданного файла
+- Заходим на клиент в каталог.
+- Проверяем наличие ранее созданного файла.
 ```bash
 [root@nfsc ~]# cd /mnt/upload
 [root@nfsc upload]# ls
 check_file
 ```
-- создаём тестовый файл
-
+- Создаем тестовый файл.
 ```
 [root@nfsc upload]# touch client_file
 ```
-
-- проверяем, что файл успешно создан и доступен на сервере
-
+- Проверяем, что файл успешно создан и доступен на сервере.
 ```
 [root@nfss upload]# ls 
 check_file  client_file
 ```
+> **Если вышеуказанные проверки прошли успешно, это значит, что проблем с правами нет.**
 
-> Если вышеуказанные проверки прошли успешно, это значит, что проблем с правами нет.
+### Предварительная проверка - клиент:
 
-## Предварительная проверка - клиент:
-
-- перезагружаем клиент
-- заходим на клиент
-- заходим в каталог
-- проверяем наличие ранее созданных файлов
+- Перезагружаем клиент.
+- Заходим на клиент.
+- Заходим в каталог.
+- Проверяем наличие ранее созданных файлов.
 ```
 [root@nfsc upload]# systemctl reboot
 Connection to 127.0.0.1 closed by remote host.
@@ -408,12 +377,12 @@ Last login: Sun Dec 10 10:00:13 2023 from 10.0.2.2
 [root@nfsc upload]# ls
 check_file  client_file
 ```
-## Предварительная проверка - сервер:
+### Предварительная проверка - сервер:
 
-- заходим на сервер в отдельном окне терминала
-- перезагружаем сервер
-- заходим на сервер
-- проверяем наличие файлов в каталоге
+- Заходим на сервер в отдельном окне терминала.
+- Перезагружаем сервер.
+- Заходим на сервер.
+- Проверяем наличие файлов в каталоге.
 
 ```
 [root@nfss upload]# systemctl reboot
@@ -424,9 +393,7 @@ Last login: Sun Dec 10 09:57:38 2023 from 10.0.2.2
 [vagrant@nfss upload]$ ls
 check_file  client_file
 ```
-
-- проверяем статус сервера NFS
-
+- Проверяем статус сервера NFS.
 ```
 [root@nfss upload]# systemctl status nfs
 ● nfs-server.service - NFS server and services
@@ -443,9 +410,7 @@ check_file  client_file
 Dec 10 10:27:49 nfss systemd[1]: Starting NFS server and services...
 Dec 10 10:27:49 nfss systemd[1]: Started NFS server and services.
 ```
-
-- проверяем статус firewall
-
+- Проверяем статус firewall.
 ```
 [root@nfss upload]# systemctl status firewalld
 ● firewalld.service - firewalld - dynamic firewall daemon
@@ -461,52 +426,43 @@ Dec 10 10:27:46 nfss systemd[1]: Started firewalld - dynamic firewall daemon.
 Dec 10 10:27:46 nfss firewalld[403]: WARNING: AllowZoneDrifting is enabled. This is considered an insecure configuration option. It wil... it now.
 Hint: Some lines were ellipsized, use -l to show in full.
 ```
-
-- проверяем экспорты
-
+- Проверяем экспорты.
 ```
 [root@nfss upload]# exportfs -s
 /srv/share  192.168.56.11/32(sync,wdelay,hide,no_subtree_check,sec=sys,rw,secure,root_squash,no_all_squash)
 ```
-
-- проверяем работу RPC
-
+- Проверяем работу RPC.
 ```
 [root@nfss upload]# showmount -a 192.168.56.10
 All mount points on 192.168.56.10:
 192.168.56.11:/srv/share
 ```
+### Проверяем клиент:
 
-## Проверяем клиент:
-
-- возвращаемся на клиент
-- перезагружаем клиент
-- заходим на клиент
-- проверяем работу RPC
-
+- Возвращаемся на клиент и перезагружаем его.
+- Заходим на клиент.
+- Проверяем работу RPC.
 ```
 [root@nfsc ~]# showmount -a 192.168.56.10
 All mount points on 192.168.56.10:
 ```
-
-- заходим в каталог и проверяем статус монтирования
+- Заходим в каталог и проверяем статус монтирования.
 ```
 [root@nfsc ~]# cd /mnt/upload
 [root@nfsc upload]# mount | grep mnt
 systemd-1 on /mnt type autofs (rw,relatime,fd=33,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=11212)
 192.168.56.10:/srv/share/ on /mnt type nfs (rw,relatime,vers=3,rsize=32768,wsize=32768,namlen=255,hard,proto=udp,timeo=11,retrans=3,sec=sys,mountaddr=192.168.56.10,mountvers=3,mountport=20048,mountproto=udp,local_lock=none,addr=192.168.56.10)
 ```
-- создаем тестовый файл final_check
-- проверяем наличие ранее созданных файлов и нового
+- Создаем тестовый файл final_check.
+- Проверяем наличие ранее созданных файлов и нового.
 ```
 [root@nfsc upload]# touch final_check
 [root@nfsc upload]# ls
 check_file  client_file  final_check
 ```
-
 > Если вышеуказанные проверки прошли успешно, это значит, что стенд работоспособен и готов к работе.
 
-## Создание автоматизированного Vagrantfile
+### Создание автоматизированного Vagrantfile
 
 - Изменяем Vagrantfile, дополнив его 2 bash-скриптами, nfss.sh - для конфигурирования сервера и nfsc.sh - для конфигурирования клиента. 
 
